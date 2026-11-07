@@ -782,7 +782,7 @@ a { color: inherit; text-decoration: none; }
 }
 .product-info .state { font-size: 11px; }
 .product-price { font-size: 13px; white-space: nowrap; }
-.product-actions { grid-column: 2/4; display: flex; gap: 13px; margin-top: -5px; }
+.product-actions { grid-column: 2/4; display: flex; gap: 13px; margin-top: -4px; }
 .danger-text { color: #ad4843; }
 
 /* ---------- Orders ---------- */
