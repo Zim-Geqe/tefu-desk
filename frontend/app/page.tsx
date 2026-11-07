@@ -89,7 +89,139 @@ export default function Home() {
       {!workspaceId?<div className="panel empty"><Store size={24}/><h2>No workspace found</h2><p>Your account does not have a workspace yet. Contact an administrator to restore access.</p></div>:<>
       {section==='Overview'&&<><div className="welcome-strip"><div className="welcome-symbol"><Activity size={18}/></div><div><strong>Welcome back, {user.name.split(' ')[0]}.</strong><span>Your workspace is connected to live business data.</span></div><span className="welcome-status"><i/> LIVE DATA</span></div><div className="metrics-grid"><Metric label="Net captured" value={business?money(captured,business.currency):'—'} icon={Banknote} trend="After completed refunds" tone="blue"/><Metric label="Awaiting payment" value={business?money(awaiting,business.currency):'—'} icon={Clock3} trend={`${counts.AWAITING_PAYMENT||0} confirmed orders`} tone="amber"/><Metric label="Orders this desk" value={String(Object.values(counts).reduce((n:number,v:number)=>n+v,0)||0)} icon={ShoppingBag} trend={`${counts.DRAFT||0} drafts to review`} tone="violet"/><Metric label="Catalogue items" value={String(products.filter(p=>p.active).length)} icon={Package} trend={`${products.length} total entries`} tone="green"/></div><section className="panel activity-panel"><div className="panel-head"><div><h2>Recent activity</h2><p>Latest changes recorded in your workspace</p></div><button className="text-button" onClick={()=>navTo('Orders')}>View orders <ArrowRight size={14}/></button></div>{dashboard?.recentActivity?.length?<div className="activity-list">{dashboard.recentActivity.slice(0,8).map((a,i)=><div className="activity-row" key={`${a.action}-${a.createdAt}-${i}`}><span className="activity-icon">{a.action.includes('payment')?<CreditCard size={15}/>:<ShoppingBag size={15}/>}</span><span className="activity-copy"><strong>{a.action.replaceAll('.',' ').replaceAll('_',' ')}</strong><small>{a.entityType||'Workspace'}{a.entityId?` · ${a.entityId.slice(0,12)}`:''}</small></span><time>{date(a.createdAt)}</time></div>)}</div>:<EmptyState title="Nothing on the desk yet" body="When you create orders or update your catalogue, the latest activity will appear here." action="Create your first order" onClick={()=>setSection('Order desk')}/>}</section><div className="lower-grid"><section className="panel"><div className="panel-head"><div><h2>Order snapshot</h2><p>Current status across your orders</p></div><ShoppingBag size={17}/></div><div className="status-rows">{['DRAFT','AWAITING_PAYMENT','PAID','PAYMENT_FAILED'].map(s=><div key={s}><span><State value={s}/></span><strong>{counts[s]||0}</strong></div>)}</div></section><section className="panel"><div className="panel-head"><div><h2>Payment health</h2><p>Amounts from verified payment records</p></div><ShieldCheck size={17}/></div><div className="payment-summary"><span>Captured gross<strong>{business?money(dashboard?.capturedPayments?.totalMinor||0,business.currency):'—'}</strong></span><span>Completed refunds<strong>{business?money(dashboard?.completedRefunds?.totalMinor||0,business.currency):'—'}</strong></span></div><div className="payment-note"><CheckCircle2 size={14}/> Net captured excludes completed refunds</div></section></div></>}
       {section==='Order desk'&&<><div className="desk-layout"><section className="panel composer-panel"><div className="section-kicker"><span className="kicker-icon"><Sparkles size={16}/></span> ORDER COMPOSER</div><h2>What did your customer ask for?</h2><p className="panel-intro">Describe the request in your own words. AI matches it against your active catalogue and prepares a draft for you to review.</p><form onSubmit={makeAiDraft}><div className="form-row"><Field label="Customer name" value={customer} onChange={e=>setCustomer(e.target.value)} required placeholder="e.g. Thandi Mokoena"/><Field label="Email (optional)" type="email" value={customerEmail} onChange={e=>setCustomerEmail(e.target.value)} placeholder="thandi@example.co.za"/></div><label className="field"><span>Customer request</span><textarea rows={5} value={request} onChange={e=>setRequest(e.target.value)} required maxLength={3000} placeholder="Two chicken meals and three drinks for a customer…"/></label><div className="composer-foot"><span><ShieldCheck size={14}/> Prices come from your catalogue. You confirm every order.</span><Button type="submit" disabled={busy||!request.trim()}>{busy?<LoaderCircle size={16} className="spin"/>:<Sparkles size={16}/>}Draft with AI</Button></div></form><div className="or-divider"><span/> OR <span/></div><button className="manual-toggle" onClick={()=>setManual(!manual)}><span><Package size={16}/><strong>Create an order manually</strong><small>Choose products from your catalogue</small></span><ArrowRight size={16}/></button>{manual&&<form className="manual-form" onSubmit={createManual}><div className="form-row"><Field label="Customer name" value={customer} onChange={e=>setCustomer(e.target.value)} required/><Field label="Email (optional)" type="email" value={customerEmail} onChange={e=>setCustomerEmail(e.target.value)}/></div>{manualLines.map((line,i)=><div className="line-editor" key={i}><select aria-label="Catalogue item" value={line.productId} onChange={e=>setManualLines(ls=>ls.map((x,n)=>n===i?{...x,productId:e.target.value}:x))}><option value="">Choose an active item</option>{products.filter(p=>p.active).map(p=><option key={p.id} value={p.id}>{p.name} · {money(p.priceMinor,p.currency)}</option>)}</select><input aria-label="Quantity" type="number" min="1" max="10000" value={line.quantity} onChange={e=>setManualLines(ls=>ls.map((x,n)=>n===i?{...x,quantity:Number(e.target.value)}:x))}/><button type="button" className="remove-line" aria-label="Remove item" onClick={()=>setManualLines(ls=>ls.filter((_,n)=>n!==i))}><X size={16}/></button></div>)}<button type="button" className="text-button" onClick={()=>setManualLines(ls=>[...ls,{productId:'',quantity:1}])}><Plus size={14}/> Add item</button><Button type="submit" disabled={busy}>Save as draft <ArrowRight size={15}/></Button></form>}</section><aside className="desk-aside"><div className="aside-card"><span className="aside-icon"><ShieldCheck size={18}/></span><h3>You stay in control</h3><p>AI can only match products already in your catalogue. It cannot change prices, add discounts or take payment.</p><div className="aside-rule"/><span className="mini-label">WORKFLOW</span><div className="workflow"><span className="workflow-n">01</span><span><strong>Describe</strong><small>Capture the request</small></span></div><div className="workflow"><span className="workflow-n">02</span><span><strong>Review</strong><small>Check items and totals</small></span></div><div className="workflow"><span className="workflow-n">03</span><span><strong>Confirm</strong><small>Then offer PayPal checkout</small></span></div><button className="aside-link" onClick={()=>setSection('Catalogue')}>Manage catalogue <ArrowRight size={14}/></button></div></aside></div>{proposal&&<section className="panel proposal"><div className="panel-head"><div><div className="section-kicker"><span className="kicker-icon"><Sparkles size={15}/></span> AI PROPOSAL</div><h2>{proposal.draft?'Review your order draft':'A little more detail needed'}</h2></div>{proposal.draft&&<State value="DRAFT"/>}</div>{proposal.explanation&&<p className="proposal-explanation">{proposal.explanation}</p>}{proposal.questions?.length>0&&<div className="question-box"><strong>Questions to resolve</strong>{proposal.questions.map((q,i)=><p key={i}>{q}</p>)}</div>}{proposal.draft?<><OrderLines order={proposal.draft} business={business}/><DraftLineEditor key={proposal.draft.id} order={proposal.draft} disabled={busy} onSave={lines=>updateDraftItems(proposal.draft!,lines)}/><div className="proposal-actions"><span>Server-calculated total · {money(proposal.draft.totalMinor,proposal.draft.currency)}</span><Button onClick={()=>confirmOrder(proposal.draft!)} disabled={busy}><Check size={16}/> Confirm order</Button></div></>:proposal.items?.length>0&&<><MatchedProposalItems items={proposal.items} products={products} business={business}/><p className="hint">No order was created because this request needs clarification. Add the missing detail to the request and try again.</p></>}</section>}</>}
-      {section==='Catalogue'&&<div className="catalog-layout"><section className="panel"><div className="panel-head"><div><h2>{editing?'Edit catalogue item':'Add a catalogue item'}</h2><p>Prices use {business?.currency||'your business currency'} minor units on the server.</p></div><Package size={18}/></div><form className="form-stack" onSubmit={addProduct}><Field label="Product or service name" value={prodName} onChange={e=>setProdName(e.target.value)} required maxLength={160}/><Field label="Description (optional)" value={prodDesc} onChange={e=>setProdDesc(e.target.value)} maxLength={2000}/><div className="form-row"><Field label="SKU (optional)" value={prodSku} onChange={e=>setProdSku(e.target.value)}/><Field label={`Price (${business?.currency||'ZAR'})`} type="number" min="0" step="0.01" value={prodPrice} onChange={e=>setProdPrice(e.target.value)} required/></div><div className="form-actions"><Button type="submit" disabled={busy}>{editing?'Save changes':'Add to catalogue'}</Button>{editing&&<Button variant="secondary" onClick={()=>{setEditing(null);setProdName('');setProdDesc('');setProdSku('');setProdPrice('')}}>Cancel</Button>}</div></form></section><section className="panel catalog-list"><div className="panel-head"><div><h2>Your catalogue</h2><p>{products.length} {products.length===1?'item':'items'} · {products.filter(p=>p.active).length} active</p></div><span className="counter-pill">{products.length}</span></div>{products.length?<div className="product-list">{products.map(p=><article className="product-row" key={p.id}><span className="product-icon"><Package size={17}/></span><span className="product-info"><strong>{p.name}</strong><small>{p.sku||p.description||'No description'} · <State value={p.active?'ACTIVE':'INACTIVE'}/></small></span><strong className="product-price">{money(p.priceMinor,p.currency)}</strong><div className="product-actions"><button className="text-button" onClick={()=>{setEditing(p);setProdName(p.name);setProdDesc(p.description||'');setProdSku(p.sku||'');setProdPrice((p.priceMinor/100).toFixed(2))}}>Edit</button>{p.active&&<button className="text-button danger-text" onClick={()=>deactivate(p)}>Deactivate</button>}</div></article>)}</div>:<EmptyState title="Your catalogue is ready for its first item" body="Add your products or services. Orders will use their current server-stored prices." action="Add the first item" onClick={()=>document.querySelector<HTMLInputElement>('input')?.focus()}/>}</section></div>}
+      {section === 'Catalogue' && (
+        <div className="catalog-layout">
+          <section className="panel">
+            <div className="panel-head">
+              <div>
+                <h2>{editing ? 'Edit catalogue item' : 'Add a catalogue item'}</h2>
+                <p>Prices use {business?.currency || 'your business currency'} minor units on the server.</p>
+              </div>
+              <Package size={18} />
+            </div>
+
+            <form className="form-stack" onSubmit={addProduct}>
+              <Field
+                label="Product or service name"
+                value={prodName}
+                onChange={e => setProdName(e.target.value)}
+                required
+                maxLength={160}
+              />
+              <Field
+                label="Description (optional)"
+                value={prodDesc}
+                onChange={e => setProdDesc(e.target.value)}
+                maxLength={2000}
+              />
+
+              <div className="form-row">
+                <Field
+                  label="SKU (optional)"
+                  value={prodSku}
+                  onChange={e => setProdSku(e.target.value)}
+                />
+                <Field
+                  label={`Price (${business?.currency || 'ZAR'})`}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={prodPrice}
+                  onChange={e => setProdPrice(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-actions">
+                <Button type="submit" disabled={busy}>
+                  {editing ? 'Save changes' : 'Add to catalogue'}
+                </Button>
+                {editing && (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setEditing(null);
+                      setProdName('');
+                      setProdDesc('');
+                      setProdSku('');
+                      setProdPrice('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
+            </form>
+          </section>
+
+          <section className="panel catalog-list">
+            <div className="panel-head">
+              <div>
+                <h2>Your catalogue</h2>
+                <p>
+                  {products.length} {products.length === 1 ? 'item' : 'items'} ·{' '}
+                  {products.filter(p => p.active).length} active
+                </p>
+              </div>
+              <span className="counter-pill">{products.length}</span>
+            </div>
+
+            {products.length ? (
+              <div className="product-list">
+                {products.map(p => (
+                  <article className="product-row" key={p.id}>
+                    <span className="product-icon">
+                      <Package size={17} />
+                    </span>
+
+                    <span className="product-info">
+                      <strong>{p.name}</strong>
+                      <small>
+                        {p.sku || p.description || 'No description'} ·{' '}
+                        <State value={p.active ? 'ACTIVE' : 'INACTIVE'} />
+                      </small>
+                    </span>
+
+                    <strong className="product-price">
+                      {money(p.priceMinor, p.currency)}
+                    </strong>
+
+                    <div className="product-actions">
+                      <button
+                        className="text-button"
+                        onClick={() => {
+                          setEditing(p);
+                          setProdName(p.name);
+                          setProdDesc(p.description || '');
+                          setProdSku(p.sku || '');
+                          setProdPrice((p.priceMinor / 100).toFixed(2));
+                        }}
+                      >
+                        Edit
+                      </button>
+                      {p.active && (
+                        <button
+                          className="text-button danger-text"
+                          onClick={() => deactivate(p)}
+                        >
+                          Deactivate
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="Your catalogue is ready for its first item"
+                body="Add your products or services. Orders will use their current server-stored prices."
+                action="Add the first item"
+                onClick={() => document.querySelector<HTMLInputElement>('input')?.focus()}
+              />
+            )}
+          </section>
+        </div>
+      )}
       {section==='Orders'&&<section className="panel orders-panel"><div className="orders-toolbar"><div><h2>All orders</h2><p>Search by customer or reference. Select an order for details and actions.</p></div><div className="order-filters"><label className="searchbox"><Search size={16}/><input aria-label="Search orders" value={search} placeholder="Search and press Enter" onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();reloadOrders(search,filter)}}}/></label><select value={filter} onChange={e=>{setFilter(e.target.value);reloadOrders(search,e.target.value)}} aria-label="Filter order status"><option value="">All statuses</option>{['DRAFT','AWAITING_PAYMENT','PAID','CANCELLED','PAYMENT_FAILED','REFUNDED'].map(s=><option key={s} value={s}>{s.replaceAll('_',' ')}</option>)}</select></div></div>{displayedOrders.length?<div className="table-wrap"><table><thead><tr><th>ORDER</th><th>CUSTOMER</th><th>DATE</th><th>STATUS</th><th className="align-right">TOTAL</th><th/></tr></thead><tbody>{displayedOrders.map(o=><tr key={o.id} onClick={()=>openOrder(o.id)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openOrder(o.id)}}} tabIndex={0} aria-label={'Open order '+o.reference} className="click-row"><td><strong>{o.reference}</strong>{o.aiGenerated&&<small className="ai-tag"><Sparkles size={11}/> AI</small>}</td><td><strong>{o.customerName}</strong><small>{o.customerEmail||'—'}</small></td><td>{date(o.createdAt)}</td><td><State value={o.status}/></td><td className="align-right amount">{money(o.totalMinor,o.currency)}</td><td><ArrowRight size={15}/></td></tr>)}</tbody></table></div>:<EmptyState title="No orders match this view" body={search||filter?'Try clearing a search or status filter.':'Your orders will appear here when you create a draft.'} action={search||filter?'Clear filters':'Create an order'} onClick={()=>{if(search||filter){setSearch('');setFilter('');reloadOrders('','')}else setSection('Order desk')}}/>}<div className="pagination"><span>Showing {displayedOrders.length} orders{cursor?' · next page':''}</span><Button variant="secondary" disabled={!nextCursor||busy} onClick={()=>reloadOrders(search,filter,nextCursor)}>Load more <ArrowRight size={14}/></Button></div></section>}
       {section==='Business settings'&&<div className="settings-grid"><section className="panel"><div className="panel-head"><div><h2>Business profile</h2><p>Your workspace details and settlement currency</p></div><Store size={18}/></div>{business&&<form className="form-stack" onSubmit={saveBusiness}><Field label="Business name" value={business.name} onChange={e=>setBusiness({...business,name:e.target.value})} required/><Field label="Business email" type="email" value={business.email||''} onChange={e=>setBusiness({...business,email:e.target.value})}/><Field label="Phone" value={business.phone||''} onChange={e=>setBusiness({...business,phone:e.target.value})}/><label className="field"><span>Business address</span><textarea rows={3} value={business.address||''} onChange={e=>setBusiness({...business,address:e.target.value})}/></label><label className="field"><span>Business currency</span><select value={business.currency} disabled={!!products.length||Object.values(dashboard?.ordersByStatus||{}).some(x=>x>0)} onChange={e=>setBusiness({...business,currency:e.target.value})}>{(!paypalSettings||!paypalSettings.supportedCurrencies.includes(business.currency))&&<option value={business.currency}>{business.currency} · not supported by PayPal checkout</option>}{(paypalSettings?.supportedCurrencies||[]).map(currency=><option key={currency} value={currency}>{currency}</option>)}</select><small className="field-note">{products.length||Object.values(dashboard?.ordersByStatus||{}).some(x=>x>0)?'Currency cannot change after products or orders exist':'Choose a server-supported PayPal currency before adding products if you plan to accept checkout.'}</small></label><Button type="submit" disabled={busy}>Save profile <Check size={15}/></Button></form>}</section><section className="panel"><div className="panel-head"><div><h2>AI order assistant</h2><p>Choose among deployment-approved settings</p></div><Sparkles size={18}/></div><div className="health-banner"><span className={`health-dot ${aiSettings?.configured?'good':''}`}/><span><strong>{aiSettings?.configured?'Provider configured':'AI is not configured'}</strong><small>{aiSettings?.provider||'NONE'} · {aiSettings?.model||'No model reported'}</small></span></div><form className="form-stack" onSubmit={saveAi}><label className="field"><span>Workspace provider</span><select value={aiProvider} onChange={e=>setAiProvider(e.target.value)}>{['NONE','GEMINI','OPENAI','COMPATIBLE'].map(x=><option key={x} value={x}>{x==='NONE'?'Disabled':x}</option>)}</select></label><Field label="Model" value={aiModel} onChange={e=>setAiModel(e.target.value)} placeholder="Deployment-configured model"/><p className="hint">Provider credentials are configured on the backend and are never shown here. The API only accepts the provider/model approved by this deployment; unsupported selections return the server’s validation error.</p><Button type="submit" disabled={busy}>Save AI preference</Button></form><div className="settings-divider"/><div className="settings-row"><span className="paypal-mark">P</span><span><strong>PayPal checkout</strong><small>{paypalSettings?.configured?'Configured on backend':'Not configured on backend'}</small></span><span className={`sandbox-pill ${paypalEnvironment==='live'?'live':''}`}><i/> {paypalEnvironment==='unknown'?'Environment not reported':paypalEnvironment}</span></div><p className="hint">PayPal credentials and live status are managed by the backend runtime. No credentials are exposed to this workspace.</p></section><section className="panel security-panel"><div className="panel-head"><div><h2>Account and security</h2><p>Signed in as {user.email}</p></div><ShieldCheck size={18}/></div><div className="security-callout"><ShieldCheck size={19}/><span><strong>Protected session</strong><small>Your sign-in uses an HttpOnly server session cookie.</small></span></div><Button variant="secondary" onClick={logout} disabled={busy}><LogOut size={15}/> Sign out</Button></section></div>}
       </>}</div></main>
