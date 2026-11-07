@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tefo
+      POSTGRES_PASSWORD: tefo_local_password
+      POSTGRES_DB: tefo_desk
+    ports:
+      - "55432:5432"
+    volumes:
+      - tefo_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tefo -d tefo_desk"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  tefo_postgres:

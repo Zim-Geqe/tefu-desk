@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Environment files and secrets. Keep the safe templates tracked.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Build output and framework caches
+dist/
+build/
+out/
+.next/
+.turbo/
+.vercel/
+*.tsbuildinfo
+
+# Tests and coverage
+coverage/
+test-results/
+playwright-report/
+
+# Logs and local databases/backups
+*.log
+*.log.*
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+*.backup
+
+# Local-only demo/API scratch files
+.last-demo-*
+api.stdout.log
+api.stderr.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum OrderStatus {
+  DRAFT
+  AWAITING_PAYMENT
+  PAID
+  CANCELLED
+  PAYMENT_FAILED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  CREATED
+  APPROVED
+  CAPTURE_PENDING
+  CAPTURED
+  DENIED
+  FAILED
+  REFUNDED
+  CANCELLED
+  UNCERTAIN
+}
+
+enum AiProvider {
+  NONE
+  GEMINI
+  OPENAI
+  COMPATIBLE
+}
+
+enum RefundStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id              String       @id @default(cuid())
+  email           String       @unique
+  passwordHash    String
+  name            String
+  createdAt       DateTime     @default(now())
+  memberships     Membership[]
+  sessions        Session[]
+  auditEvents     AuditEvent[]
+  confirmedOrders Order[]      @relation("OrderConfirmer")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+model Workspace {
+  id            String           @id @default(cuid())
+  name          String
+  createdAt     DateTime         @default(now())
+  business      Business?
+  memberships   Membership[]
+  products      Product[]
+  orders        Order[]
+  payments      PaymentAttempt[]
+  refunds       Refund[]
+  auditEvents   AuditEvent[]
+  webhookEvents WebhookEvent[]
+  aiSettings    AiSettings?
+}
+
+model Membership {
+  id          String         @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        MembershipRole @default(OWNER)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+model Business {
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  currency    String    @default("ZAR")
+  email       String?
+  phone       String?
+  address     String?
+  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime  @default(now())
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  workspaceId String
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  sku         String?
+  priceMinor  Int
+  currency    String
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+
+  @@unique([workspaceId, sku])
+  @@index([workspaceId, active])
+}
+
+model Order {
+  id              String           @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reference       String
+  customerName    String
+  customerEmail   String?
+  customerPhone   String?
+  customerRequest String?
+  currency        String
+  subtotalMinor   Int
+  totalMinor      Int
+  status          OrderStatus      @default(DRAFT)
+  aiGenerated     Boolean          @default(false)
+  confirmedById   String?
+  confirmedBy     User?            @relation("OrderConfirmer", fields: [confirmedById], references: [id], onDelete: SetNull)
+  confirmedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  items           OrderItem[]
+  payments        PaymentAttempt[]
+
+  @@unique([workspaceId, reference])
+  @@index([workspaceId, status, createdAt])
+  @@index([workspaceId, customerEmail])
+}
+
+model OrderItem {
+  id                  String   @id @default(cuid())
+  orderId             String
+  order               Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId           String?
+  product             Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  descriptionSnapshot String
+  skuSnapshot         String?
+  quantity            Int
+  unitPriceMinor      Int
+  lineTotalMinor      Int
+  currency            String
+}
+
+model AiSettings {
+  workspaceId String     @id
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider    AiProvider @default(NONE)
+  model       String?
+  updatedAt   DateTime   @updatedAt
+}
+
+model PaymentAttempt {
+  id             String        @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  orderId        String
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  paypalOrderId  String?       @unique
+  status         PaymentStatus @default(CREATED)
+  amountMinor    Int
+  currency       String
+  idempotencyKey String
+  approvalUrl    String?
+  captureId      String?       @unique
+  lastErrorCode  String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  refunds        Refund[]
+
+  @@unique([workspaceId, idempotencyKey])
+  @@index([orderId, status])
+}
+
+model Refund {
+  id               String         @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  paymentAttemptId String
+  paymentAttempt   PaymentAttempt @relation(fields: [paymentAttemptId], references: [id], onDelete: Cascade)
+  paypalRefundId   String         @unique
+  amountMinor      Int
+  currency         String
+  status           RefundStatus
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([paymentAttemptId, status])
+}
+
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  eventId     String
+  eventType   String
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([workspaceId, eventId])
+}
+
+model AuditEvent {
+  id          String     @id @default(cuid())
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String
+  entityType  String?
+  entityId    String?
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+
+  @@index([workspaceId, createdAt])
+}

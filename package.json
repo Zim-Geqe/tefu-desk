@@ -1,0 +1,48 @@
+{
+  "name": "tefo-desk-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12" },
+  "scripts": {
+    "dev": "node --env-file-if-exists=.env --import tsx --watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node --env-file-if-exists=.env dist/src/server.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run tests/core.test.ts tests/app.test.ts tests/paypal.test.ts tests/integration.test.ts",
+    "test:integration": "vitest run tests/integration.test.ts",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:check": "tsx scripts/check-db.ts",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed:dev": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^10.0.2",
+    "@fastify/helmet": "^13.0.1",
+    "@fastify/rate-limit": "^10.2.1",
+    "@fastify/swagger": "^9.5.1",
+    "@fastify/swagger-ui": "^6.1.3",
+    "@prisma/client": "^6.8.2",
+    "argon2": "^0.43.0",
+    "fastify": "^5.3.3",
+    "pino": "^9.7.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "eslint": "^9.28.0",
+    "prisma": "^6.8.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.34.0",
+    "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2",
+    "minimatch": "11.0.5"
+  }
+}
