@@ -1,0 +1,90 @@
+name: tefo-desk
+
+x-api-env: &api-env
+  NODE_ENV: production
+  PORT: 3000
+  HOST: 0.0.0.0
+  DATABASE_URL: postgresql://${POSTGRES_USER:?set POSTGRES_USER}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:?set POSTGRES_DB}?schema=public
+  APP_ORIGIN: ${APP_ORIGIN:?set APP_ORIGIN}
+  COOKIE_SECURE: "true"
+  SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-14}
+  PAYPAL_ENV: ${PAYPAL_ENV:-sandbox}
+  PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:?set PAYPAL_CLIENT_ID}
+  PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:?set PAYPAL_CLIENT_SECRET}
+  PAYPAL_WEBHOOK_ID: ${PAYPAL_WEBHOOK_ID:-}
+  AI_PROVIDER: ${AI_PROVIDER:-gemini}
+  AI_MODEL: ${AI_MODEL:?set AI_MODEL}
+  AI_API_KEY: ${AI_API_KEY:?set AI_API_KEY}
+  AI_BASE_URL: ${AI_BASE_URL:-}
+  AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-15000}
+  AI_MAX_RETRIES: ${AI_MAX_RETRIES:-1}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+    volumes:
+      - tefo_desk_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrate
+    restart: "no"
+    environment: *api-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    restart: unless-stopped
+    environment: *api-env
+    ports:
+      - "127.0.0.1:${BACKEND_HOST_PORT:-4510}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:?set NEXT_PUBLIC_API_BASE_URL}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-4511}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  tefo_desk_postgres:

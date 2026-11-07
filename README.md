@@ -150,7 +150,7 @@ npm.cmd run test:integration
 
 ## Deployment
 
-Build with `npm.cmd ci`, `npm.cmd run db:generate`, `npm.cmd run build`; deploy the image and run `npm run db:migrate` as a one-off release step before rolling out the server. Configure PostgreSQL TLS, network allowlists, secret injection, HTTPS proxy headers and secure cookies, exact CORS origin, PayPal environment and webhook ID, structured-log retention, resource limits, backups, and health checks. Keep sandbox and live credentials and webhook registrations separate. Webhook delivery should be monitored for unprocessed events. A PayPal create timeout returns a reconciliation handle; retry reconciliation with the same attempt ID. Capture timeouts remain uncertain until PayPal is queried, so the client must reconcile before another capture request.
+For the prepared Docker, Nginx, TLS and VPS port setup for `tefudesk.fastlaneorders.online`, see [DEPLOYMENT.md](DEPLOYMENT.md). It keeps the app ports private on loopback, uses a separate PostgreSQL volume, applies migrations as a deployment step, and leaves other VPS containers untouched. A PayPal create timeout returns a reconciliation handle; retry reconciliation with the same attempt ID. Capture timeouts remain uncertain until PayPal is queried, so the client must reconcile before another capture request.
 
 ## Verification status
 

@@ -1,8 +1,15 @@
 node_modules
+frontend/node_modules
 dist
 coverage
+frontend/.next
+frontend/coverage
 .git
 .env
 .env.*
 !.env.example
 *.log
+coverage
+test-results
+playwright-report
+.last-demo-*

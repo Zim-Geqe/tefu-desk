@@ -1,13 +1,24 @@
 FROM node:22-alpine AS build
 WORKDIR /app
+RUN apk add --no-cache openssl
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npx prisma generate && npm run build && npm prune --omit=dev
-FROM node:22-alpine
+RUN npx prisma generate && npm run build
+
+# One-shot production migration image. It has the Prisma CLI and source migrations.
+FROM build AS migrate
+ENV NODE_ENV=production
+CMD ["npx", "prisma", "migrate", "deploy"]
+
+# The API runtime contains only production packages and the Prisma client generated above.
+FROM node:22-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
+RUN apk add --no-cache openssl
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY --from=build --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
 EXPOSE 3000
