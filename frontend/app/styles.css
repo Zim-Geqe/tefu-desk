@@ -566,7 +566,7 @@ a { color: inherit; text-decoration: none; }
 /* ---------- Forms ---------- */
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 13px; }
-.field > span { font-size: 10px; font-weight: 700; color: #586a7c; }
+.field > span { font-size: 14px; font-weight: 700; color: #586a7c; }
 .field input, .field textarea, .field select,
 .line-editor select, .line-editor input,
 .order-filters select, .searchbox {
@@ -576,7 +576,7 @@ a { color: inherit; text-decoration: none; }
   background: #fff;
   color: #27384a;
   padding: 9px 10px;
-  font-size: 11px;
+  font-size: 13px;
   outline: none;
 }
 .field input:focus, .field textarea:focus, .field select:focus,
@@ -598,7 +598,7 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 9px;
+  font-size: 10px;
   color: #7f8d9c;
 }
 .composer-foot svg { color: #57826d; }
@@ -626,8 +626,8 @@ a { color: inherit; text-decoration: none; }
 }
 .manual-toggle > span { display: grid; grid-template-columns: 23px 1fr; align-items: center; }
 .manual-toggle > span > svg { grid-row: span 2; color: #6180ab; }
-.manual-toggle strong { font-size: 10px; }
-.manual-toggle small { font-size: 9px; color: #919daa; margin-top: 3px; }
+.manual-toggle strong { font-size: 11px; }
+.manual-toggle small { font-size: 10px; color: #919daa; margin-top: 3px; }
 .manual-toggle > svg { color: #8795a3; }
 .manual-form { padding: 16px 2px 0; }
 .manual-form > .button { margin-top: 12px; }
