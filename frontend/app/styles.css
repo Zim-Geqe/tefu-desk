@@ -408,7 +408,7 @@ a { color: inherit; text-decoration: none; }
   margin: 0 0 5px;
   color: #1b2d43;
 }
-.panel-head p, .orders-toolbar p { font-size: 10px; color: #8b97a4; margin: 0; }
+.panel-head p, .orders-toolbar p { font-size: 11px; color: #8b97a4; margin: 0; }
 .panel-head > svg { color: #8998a9; }
 .text-button {
   display: inline-flex;
@@ -830,7 +830,7 @@ td {
   border-bottom: 1px solid #f0f2f5;
 }
 td > strong { display: block; color: #34465a; font-weight: 600; }
-td > small { display: block; color: #98a3ae; font-size: 9px; margin-top: 4px; }
+td > small { display: block; color: #98a3ae; font-size: 10px; margin-top: 4px; }
 .click-row { cursor: pointer; }
 .click-row:hover { background: #fafcff; }
 .align-right { text-align: right; }
@@ -897,7 +897,7 @@ td > small { display: block; color: #98a3ae; font-size: 9px; margin-top: 4px; }
 .health-banner > span:last-child { display: flex; flex-direction: column; gap: 4px; }
 .health-banner strong, .settings-row strong, .security-callout strong { font-size: 10px; }
 .health-banner small, .settings-row small, .security-callout small {
-  font-size: 9px;
+  font-size: 11px;
   color: #8895a2;
 }
 .settings-grid .hint, .hint {
