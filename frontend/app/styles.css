@@ -764,22 +764,24 @@ a { color: inherit; text-decoration: none; }
   display: grid;
   place-items: center;
 }
-.product-info { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.product-info { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .product-info > strong {
-  font-size: 10px;
+  font-size: 13px;
+  line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .product-info small {
-  font-size: 9px;
+  font-size: 11px;
   color: #909ba7;
+  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.product-info .state { font-size: 8px; }
-.product-price { font-size: 10px; white-space: nowrap; }
+.product-info .state { font-size: 11px; }
+.product-price { font-size: 13px; white-space: nowrap; }
 .product-actions { grid-column: 2/4; display: flex; gap: 13px; margin-top: -5px; }
 .danger-text { color: #ad4843; }
 
