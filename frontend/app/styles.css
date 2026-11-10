@@ -897,11 +897,11 @@ td > small { display: block; color: #98a3ae; font-size: 13px; margin-top: 4px; }
 .health-banner > span:last-child { display: flex; flex-direction: column; gap: 4px; }
 .health-banner strong, .settings-row strong, .security-callout strong { font-size: 10px; }
 .health-banner small, .settings-row small, .security-callout small {
-  font-size: 11px;
+  font-size: 13px;
   color: #8895a2;
 }
 .settings-grid .hint, .hint {
-  font-size: 9px;
+  font-size: 14px;
   color: #8996a3;
   line-height: 1.5;
   margin: 0 0 12px;
@@ -1325,7 +1325,7 @@ td > small { display: block; color: #98a3ae; font-size: 13px; margin-top: 4px; }
 }
 .route-state .button { text-decoration: none; }
 
-.field-note { font-size: 9px; line-height: 1.45; color: #8996a3; }
+.field-note { font-size: 13px; line-height: 1.45; color: #8996a3; }
 .action-hint { font-size: 9px; color: #8b6a38; padding: 7px 2px; }
 .settings-row .sandbox-pill { white-space: nowrap; }
 
