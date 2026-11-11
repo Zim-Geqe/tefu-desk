@@ -11,7 +11,7 @@ if (process.env.NODE_ENV === 'production' || process.env.ALLOW_DEV_SEED !== 'tru
 
 const db = new PrismaClient();
 const email = 'owner@example.test';
-const passwordHash = await argon2.hash('ChangeMe123456', { type: argon2.argon2id });
+const passwordHash = await argon2.hash('passsword123!!!', { type: argon2.argon2id });
 
 try {
   const user = await db.user.upsert({
