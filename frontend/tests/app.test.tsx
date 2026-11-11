@@ -47,7 +47,7 @@ describe('Tefo Desk workspace flows', () => {
     await screen.findByText('Chicken meal');
     expect(fetchMock.mock.calls.some(([url, init]) => String(url).endsWith('/products') && init?.method === 'POST')).toBe(true);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Order desk' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Order Desk' }));
     fireEvent.change(screen.getByLabelText('Customer name'), { target: { value: 'A customer' } });
     fireEvent.change(screen.getByLabelText('Email (optional)'), { target: { value: 'customer@example.test' } });
     fireEvent.change(screen.getByLabelText('Customer request'), { target: { value: 'One chicken meal' } });
