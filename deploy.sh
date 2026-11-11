@@ -72,14 +72,15 @@ if [[ -f "$ENV_FILE" ]]; then
   if [[ -z "$PAYPAL_CLIENT_ID" || "$PAYPAL_CLIENT_ID" == YOUR_* ]]; then prompt_secret PAYPAL_CLIENT_ID "PayPal Sandbox Client ID"; fi
   if [[ -z "$PAYPAL_CLIENT_SECRET" || "$PAYPAL_CLIENT_SECRET" == YOUR_* ]]; then prompt_secret PAYPAL_CLIENT_SECRET "PayPal Sandbox Secret"; fi
   if [[ -z "$AI_API_KEY" || "$AI_API_KEY" == YOUR_* ]]; then prompt_secret AI_API_KEY "Gemini API key"; fi
-  AI_MODEL="${AI_MODEL:-gemini-3.5-flash-lite}"
+  if [[ -z "$AI_MODEL" || "$AI_MODEL" == YOUR_* ]]; then
+    read -r -p "Gemini model enabled for your Google AI project: " AI_MODEL
+  fi
 else
   info "Credentials are entered invisibly and stored only in $ENV_FILE (mode 600)."
   prompt_secret PAYPAL_CLIENT_ID "PayPal Sandbox Client ID"
   prompt_secret PAYPAL_CLIENT_SECRET "PayPal Sandbox Secret"
   prompt_secret AI_API_KEY "Gemini API key"
-  read -r -p "Gemini model [gemini-3.5-flash-lite]: " AI_MODEL
-  AI_MODEL="${AI_MODEL:-gemini-3.5-flash-lite}"
+  read -r -p "Gemini model enabled for your Google AI project: " AI_MODEL
   POSTGRES_PASSWORD="$(openssl rand -hex 32)"
   cat > "$ENV_FILE" <<EOF
 DOMAIN=$DOMAIN

@@ -1,12 +1,58 @@
-# Tefo Desk — AI payment assistant for small businesses
+# Tefo Desk
 
-Tefo Desk turns a customer’s plain-language request into a reviewable order, then uses PayPal Checkout to collect payment and verifies the resulting payment state on the server. It is built for small businesses that need a simple path from “what the customer asked for” to “paid and recorded.”
+Tefo means “payment” in Sesotho. Tefo Desk is a small-business order-to-payment workspace: a seller turns a customer’s plain-language request into a reviewable catalog order, confirms it, and collects payment through PayPal Checkout. Payment status is recorded only after the backend verifies the PayPal capture.
 
-AI proposes catalog items and quantities; the business owner reviews and confirms every order before checkout. Prices always come from the business catalog, and a payment is marked paid only after PayPal confirms capture. AI and PayPal credentials stay on the server. The demo uses the PayPal sandbox and never moves live funds.
+The project is being built for the **Build What’s Next with PayPal and AI** hackathon. The submission story and demo outline are in [HACKATHON.md](HACKATHON.md); local setup, API details, and deployment notes are below.
 
-**Hackathon:** Build What's Next with PayPal and AI. See [HACKATHON.md](HACKATHON.md) for the submission description, tool disclosure, demo walkthrough, and final judging checklist.
+## Inspiration
 
-The implementation uses Next.js, Fastify, TypeScript, PostgreSQL and Prisma. PayPal defaults to sandbox; AI remains disabled until a provider is configured.
+Small businesses often receive orders in messages and then re-enter the details into a separate payment tool. Tefo Desk explores whether AI can help bridge that gap without taking control away from the seller. “Tefo” means payment in Sesotho, grounding the project in its South African context.
+
+## What it does
+
+- Turns a seller’s customer-request text into a proposed order using the business’s active product catalog.
+- Asks for clarification instead of creating an order when the request is uncertain.
+- Keeps the seller in control: every AI-generated order is a draft that must be reviewed and confirmed.
+- Calculates prices from saved catalog data, not from AI output.
+- Creates PayPal Checkout orders, captures approved payments on the server, and reconciles uncertain payment attempts.
+- Provides workspace-scoped order, catalog, payment, refund, and activity views.
+
+## How we built it
+
+The web app is built with **TypeScript, React 19, and Next.js 16**. A **Node.js 22+ / Fastify 5** API uses **Prisma 6** with **PostgreSQL 16**. The API calls the **PayPal Orders v2 REST API** and the configured **Gemini API** directly over HTTPS; the project does not use a PayPal or AI client SDK. Gemini returns structured order suggestions, which the API validates before creating a draft. The local database runs with **Docker Compose**.
+
+For the full stack and service disclosure, see [HACKATHON.md](HACKATHON.md). The repository also includes a Docker-based deployment configuration for a Linux VPS with Nginx and Certbot/Let’s Encrypt; it is a deployment recipe, not a claim that a hosted demo is currently available.
+
+## License
+
+This project is released under the [MIT License](LICENSE).
+
+## Challenges we ran into
+
+The main challenge is keeping AI suggestions separate from financial authority. Catalog IDs and quantities are validated by the API, amounts are calculated from the database, and seller confirmation is required before checkout. PayPal’s asynchronous approval, capture, webhook, and uncertain-result states also need careful handling so a redirect alone never marks an order as paid.
+
+## Accomplishments that we're proud of
+
+The repository contains a working full-stack path from an AI-assisted draft to PayPal Sandbox checkout and server-verified capture, plus persistent order/payment records, idempotency, and a local seeded demo workspace. Automated tests cover the AI output boundary, payment adapter behavior, and application flows; live provider credentials are needed to run external-service smoke tests.
+
+## What we learned
+
+Structured AI output still needs strict server-side validation; a model response must never be treated as a price or a payment instruction. We also learned to model payment attempts as stateful records and to reconcile with PayPal when a network timeout makes the outcome uncertain.
+
+## What's next for Tefo Desk
+
+- Add a real Sesotho user experience and validate the terminology with Sesotho speakers. The current interface is English-only; the name is not a claim of localization.
+- Improve South African payment support. The current PayPal Orders integration rejects ZAR, and the seeded checkout demo uses USD; it does not convert currency.
+- Run and document a complete live-credentialed Gemini and PayPal Sandbox demo, including webhook delivery.
+- Add usability and reliability work based on feedback from small-business owners.
+
+## Current scope and important limitations
+
+- **Payments:** PayPal is configured for Sandbox by default. ZAR is currently unsupported by this Orders integration and is rejected rather than silently converted. The demo fixture uses USD. Do not use live credentials for the hackathon demo.
+- **AI:** Gemini is the documented/demo provider; the backend also supports OpenAI and compatible chat-completions endpoints. AI is disabled until configured both in the backend environment and in **Business settings → AI order assistant**. The app does not localize the AI flow to Sesotho.
+- **Data sent to AI:** The customer request and active catalog names, descriptions, and SKUs are sent to the configured provider to make a draft. Do not include sensitive customer data; review the provider’s terms and data-retention policy.
+- **Messaging:** Follow-up text can be drafted from order state, but it is not sent by the application.
+- **Hosting:** Source includes VPS deployment files. The judge-ready local setup below is the supported run path; configure and verify a hosted deployment separately.
 
 ## Requirements
 
@@ -20,13 +66,15 @@ The implementation uses Next.js, Fastify, TypeScript, PostgreSQL and Prisma. Pay
 ```powershell
 Copy-Item .env.example .env
 docker compose up -d postgres
-npm.cmd install
+npm.cmd ci
 npm.cmd run db:generate
 npm.cmd run db:migrate:dev
 npm.cmd run dev
 ```
 
 The API listens on `http://localhost:3000`; OpenAPI UI is at `http://localhost:3000/docs`. The Tefo Desk web app runs at `http://localhost:3001`, which is the default `APP_ORIGIN` for credentialed API requests. PostgreSQL is published on host port `55432` to avoid conflicts with local PostgreSQL services. `GET /health` is process health and `GET /ready` checks the live PostgreSQL connection. The first command copies safe local defaults. Set a unique database password before exposing PostgreSQL beyond localhost.
+
+For the hackathon AI demo, first edit the root `.env`: set `AI_PROVIDER=gemini`, choose an `AI_MODEL` enabled for your Google AI project, and set `AI_API_KEY`. For PayPal, provide your Sandbox app's `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET`; keep `PAYPAL_ENV=sandbox`. Restart the API after changing `.env`. Never use or publish live credentials for the demo.
 
 ## Web application (Windows PowerShell)
 
@@ -50,7 +98,7 @@ npm.cmd test
 npm.cmd run build
 ```
 
-The UI reads live workspace data only. `GET /api/v1/workspaces/{workspaceId}/settings/paypal` returns safe PayPal environment/configuration status and the backend's supported currency list; it never returns credentials. AI configuration changes only select a provider/model already configured by the backend runtime. Messaging delivery and sending follow-ups are not implemented by the API.
+The UI reads live workspace data only. `GET /api/v1/workspaces/{workspaceId}/settings/paypal` returns safe PayPal environment/configuration status and the backend's supported currency list; it never returns credentials. To enable the seeded workspace's AI order assistant, open **Business settings → AI order assistant**, choose the same provider and model as the backend `.env`, then save. Provider credentials remain server-side. Messaging delivery and sending follow-ups are not implemented by the API.
 
 ## Environment
 
@@ -81,7 +129,7 @@ npm.cmd run db:seed:dev
 Remove-Item Env:ALLOW_DEV_SEED
 ```
 
-The fixture login is `owner@example.test` / `ChangeMe123456`; use only in local development and never expose it to a network. Fixtures create a USD business, three catalog products, and a sample draft order so the PayPal sandbox flow can be tried without first creating catalog data. Seeding is repeatable and resets the demo account password. Before production migrations, take a database backup and rehearse restore and migration against a staging copy. Configure encrypted backups, retention, monitoring and tested restore procedures; this repository does not operate backups for you.
+The fixture login is `owner@example.test` / `ChangeMe123456`; use only in local development and never expose it to a network. Fixtures create a USD business, three catalog products, and a sample draft order so the PayPal Sandbox flow can be tried without first creating catalog data. Seeding is repeatable and resets the demo account password. Before production migrations, take a database backup and rehearse restore and migration against a staging copy. Configure encrypted backups, retention, monitoring and tested restore procedures; this repository does not operate backups for you.
 
 ## Authentication and frontend contract
 
@@ -101,7 +149,7 @@ Automated PayPal tests below mock HTTP at the adapter boundary; they are not a r
 
 ## AI provider configuration and smoke test
 
-Choose exactly one provider in `.env`, supply a model and key, and for a compatible service set `AI_BASE_URL` to its OpenAI-compatible API base. The adapter supports Gemini `generateContent` structured JSON and OpenAI chat completions JSON mode. Compatible endpoints may implement different options; unsupported behavior fails safely. Restart after changing environment settings, authenticate, then call `GET /api/v1/workspaces/{workspaceId}/settings/ai` to inspect non-secret health. Create active catalog items and call `POST /api/v1/workspaces/{workspaceId}/orders/draft-from-request` with a real customer request. Verify it matches only returned catalog IDs; ambiguous requests return questions and no order. This manual smoke test requires a real provider credential. AI output is validated and prices are recomputed by the backend.
+Choose exactly one provider in `.env`, supply a model enabled for that provider and a key, and for a compatible service set `AI_BASE_URL` to its OpenAI-compatible API base. The adapter supports Gemini `generateContent` structured JSON and OpenAI chat completions JSON mode. Compatible endpoints may implement different options; unsupported behavior fails safely. Restart after changing environment settings, sign in, and save that same provider/model under **Business settings → AI order assistant**. `GET /api/v1/workspaces/{workspaceId}/settings/ai` reports non-secret health. Create active catalog items and call `POST /api/v1/workspaces/{workspaceId}/orders/draft-from-request` with a real customer request. Verify it matches only returned catalog IDs; ambiguous requests return questions and no order. This manual smoke test requires a real provider credential. AI output is validated and prices are recomputed by the backend.
 
 ## Endpoint inventory
 

@@ -1,100 +1,71 @@
-# Build What's Next with PayPal and AI — Tefo Desk
+# Tefo Desk — Build What's Next with PayPal and AI
 
-## Project description
+## Inspiration
 
-Tefo Desk is an AI payment assistant for small businesses. A seller describes what a customer wants in plain language; the assistant matches that request to the seller's real catalog and drafts an order. The seller reviews the items and catalog prices, confirms the order, and sends the customer to PayPal Checkout. Tefo Desk records payment only after the server verifies PayPal's capture result.
+Tefo means “payment” in Sesotho, a South African language. Small businesses often receive customer orders in messages, re-enter them into a catalog or order book, and then switch tools again to collect payment. We wanted to explore how AI could reduce that manual handoff while leaving the business owner in control.
 
-This connects two jobs that usually live in separate tools: understanding an order and getting it paid. It gives a small business a faster path from customer message to verified payment while keeping the business owner in control of every order and payment request.
+## What it does
 
-AI cannot invent a price or choose a product outside the business catalog. Unclear requests become questions instead of orders. The owner must confirm the draft before checkout. PayPal credentials stay on the server, and the demo runs against PayPal Sandbox.
+Tefo Desk is a business workspace that moves an order from customer request to PayPal payment:
 
-## Tools and how they are used
+1. A seller describes what a customer wants in plain language.
+2. AI proposes products and quantities from the seller’s active catalog, or asks questions if the request is unclear.
+3. Tefo Desk calculates prices from catalog records and saves the proposal as a draft.
+4. The seller reviews and confirms the order.
+5. The customer approves PayPal Checkout, and the backend captures and verifies the payment before marking the order paid.
 
-- **PayPal Orders v2 REST API (Sandbox):** create checkout orders, return the customer to PayPal for approval, capture approved orders server-side, and reconcile uncertain capture results. The webhook adapter verifies PayPal signatures and deduplicates events when a public HTTPS webhook URL is configured.
-- **Google Gemini API:** interpret a customer's plain-language request into catalog product IDs, quantities, and clarification questions. The backend validates every product ID and quantity and computes the final prices from the database catalog.
-- **Next.js, React, TypeScript:** responsive seller workspace and checkout-return experience.
-- **Fastify, Prisma, PostgreSQL:** authenticated, workspace-scoped API; order state, audit history, and payment ledger.
-- **Docker Compose:** local PostgreSQL for a repeatable judge setup.
+AI cannot add an unlisted product or set a price, and it cannot initiate checkout without the seller confirming the draft. The app also includes manual order creation, order and catalog management, payment reconciliation, and payment/refund activity.
 
-Only PayPal and Gemini are required external services. Credentials are supplied by the developer in local environment variables; none are committed to this repository or exposed to the browser.
+## How we built it
 
-## Run the functional demo
+### Tools and technologies
 
-Prerequisites: Node.js 22+, npm, and Docker Desktop with Compose. Create a PayPal Developer Sandbox REST app and a Gemini API key first. No live PayPal account credentials should be used.
+- **Languages:** TypeScript; SQL through Prisma migrations; CSS for the web interface.
+- **Frontend:** Next.js 16, React 19, and Lucide React icons.
+- **Backend:** Node.js 22+ and Fastify 5, with Zod request/config validation.
+- **Database:** PostgreSQL 16, accessed through Prisma 6.
+- **Payments:** PayPal Orders v2 REST API in Sandbox for checkout creation, approval, server-side capture and reconciliation. The app can verify and deduplicate PayPal webhooks when configured.
+- **AI:** Google Gemini API for structured order proposals. The backend also has adapters for OpenAI and OpenAI-compatible chat-completions APIs. It calls provider APIs directly over HTTPS; no AI SDK is used.
+- **Security and API documentation:** Argon2id password hashing, HttpOnly session cookies, Fastify security plugins, and OpenAPI/Swagger UI.
+- **Local development and deployment:** Docker Compose for PostgreSQL and a Linux VPS deployment recipe using Docker Compose, Nginx, and Certbot/Let’s Encrypt.
 
-1. In the repository root, create local environment files and start PostgreSQL:
+### What the AI and PayPal do
 
-   ```powershell
-   Copy-Item .env.example .env
-   docker compose up -d postgres
-   npm.cmd ci
-   npm.cmd run db:generate
-   npm.cmd run db:migrate:dev
-   ```
+The AI receives the customer request and active catalog names, descriptions, and SKUs; it returns product IDs, quantities, clarification questions, and an explanation. The server validates the response against the workspace catalog and computes amounts from database prices. PayPal credentials remain in the backend environment. Checkout approval is not treated as payment: the backend captures through PayPal and checks the capture result before updating the order.
 
-2. Edit the ignored root `.env` file. Keep `PAYPAL_ENV=sandbox` and set `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET` from the PayPal Sandbox app. Set `AI_PROVIDER=gemini`, `AI_MODEL=gemini-3.5-flash-lite`, and `AI_API_KEY` from Google AI Studio. Keep secrets out of source control and chat. Restart the API after editing `.env`.
+## Challenges we ran into
 
-   ```dotenv
-   PAYPAL_ENV=sandbox
-   PAYPAL_CLIENT_ID=your_sandbox_client_id
-   PAYPAL_CLIENT_SECRET=your_sandbox_secret
-   AI_PROVIDER=gemini
-   AI_MODEL=gemini-3.5-flash-lite
-   AI_API_KEY=your_gemini_api_key
-   ```
+The key challenge was making AI useful without making it authoritative over money. Model output must be treated as untrusted: product IDs and quantities are checked, prices are never accepted from the model, uncertain requests should become clarification questions, and a human must confirm an order.
 
-   These are local placeholders; replace them in `.env`, never in a tracked file. Gemini model availability can vary by project, so select a currently enabled model from [Google's Gemini model list](https://ai.google.dev/gemini-api/docs/models). Create the Gemini key in [Google AI Studio](https://aistudio.google.com/app/apikey) and Sandbox credentials in the [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/).
+Payment flows also have more than a success and failure state. A browser can close or a network request can time out while PayPal is still processing, so the app records payment attempts and supports reconciliation instead of assuming that a redirect or timeout tells the whole story.
 
-3. Seed a repeatable USD demo workspace. It has a ready-made draft order and three catalog products, including a $129.00 Starter Workflow Pack:
+## Accomplishments that we're proud of
 
-   ```powershell
-   $env:ALLOW_DEV_SEED = 'true'
-   npm.cmd run db:seed:dev
-   Remove-Item Env:ALLOW_DEV_SEED
-   ```
+- Built the end-to-end seller flow: AI-assisted draft, human review, PayPal Sandbox checkout, server-side capture, and persisted payment status.
+- Kept prices anchored to the database catalog and made order confirmation an explicit seller action.
+- Added workspace-scoped records, idempotent checkout attempts, payment reconciliation, and webhook signature verification/deduplication support.
+- Added a repeatable local demo workspace with three USD catalog items and a draft order, plus automated tests for core logic and mocked provider/payment boundaries.
 
-4. Start the backend in one terminal and the web app in another:
+## What we learned
 
-   ```powershell
-   npm.cmd run dev
-   ```
+Structured output does not make an AI response trustworthy; the server still needs to validate every field and make all financial decisions from trusted records. We also learned to represent payment attempts explicitly, because PayPal’s external state can be temporarily uncertain from the app’s point of view.
 
-   ```powershell
-   Set-Location frontend
-   Copy-Item .env.example .env.local
-   npm.cmd ci
-   npm.cmd run dev
-   ```
+## What's next for Tefo Desk
 
-5. Open `http://localhost:3001` and sign in with `owner@example.test` / `ChangeMe123456`. Open **Order desk**, describe a customer request using the seeded catalog, review the Gemini proposal, create/confirm the order, then choose PayPal checkout. Approve the transaction with a PayPal Sandbox buyer account. The return flow asks the API to capture and verify payment before the dashboard marks it paid.
+- Localize the interface and order-assistance experience into Sesotho with review from fluent speakers. The current UI is English-only.
+- Improve support for South African payment expectations. This PayPal Orders integration currently rejects ZAR rather than converting it; the seeded checkout demo therefore uses USD.
+- Complete and record a credentialed end-to-end Gemini and PayPal Sandbox run, including webhook delivery.
+- Test the workflow with small-business owners and improve the catalog matching and clarification experience from their feedback.
 
-The demo login is only for a local development database. Do not expose it on a public host. PayPal Sandbox approvals do not move real funds. If Gemini is unavailable, the manual order workflow remains available but does not demonstrate the required AI integration. If PayPal credentials are missing, checkout stays disabled; configure both PayPal keys before recording the end-to-end video.
+## Technology and demo notes
 
-## Under-three-minute demo video outline
+**PayPal:** PayPal Orders v2 REST API, Sandbox environment.
+**AI:** Gemini API (provider can be selected at deployment; OpenAI and compatible endpoints are also supported).
+**Languages/frameworks:** TypeScript, SQL/Prisma migrations, CSS, Next.js, React, Fastify.
+**Database/platforms:** PostgreSQL, Docker Compose; deployment files target a Linux VPS behind Nginx with TLS from Certbot/Let’s Encrypt.
 
-Record the actual running app with narration and no copyrighted music or unlicensed third-party material.
+The project calls PayPal and AI provider APIs directly over HTTPS; it does not use a PayPal SDK, AI SDK, hosted database service, or messaging-delivery platform. The included VPS deployment configuration is not itself a hosted demo.
 
-- **0:00–0:20 — Problem:** A small seller receives orders in informal messages and manually re-enters them before asking for payment.
-- **0:20–0:55 — AI in action:** Enter a request such as “Maya wants two Starter Workflow Packs.” Show Gemini's proposed catalog item and quantity. Briefly show that the price comes from the catalog and that the seller reviews the draft.
-- **0:55–1:15 — Human control:** Confirm the order and show its payment-pending state. Explain that the agent cannot create its own price or take payment without seller confirmation.
-- **1:15–2:20 — PayPal in action:** Start Sandbox checkout, approve as a Sandbox buyer, return to Tefo Desk, and show the verified capture and updated dashboard.
-- **2:20–2:50 — Why it matters:** Show the order record and explain how this shortens the path from customer request to verified payment for small businesses.
+For local setup, API details, and deployment instructions, see [README.md](README.md) and [DEPLOYMENT.md](DEPLOYMENT.md). Use PayPal Sandbox credentials only for the demo. To use the seeded AI flow, configure `AI_PROVIDER`, `AI_MODEL`, and `AI_API_KEY` in the root `.env`, start the API, then sign in and open **Business settings → AI order assistant**. Select the same provider and model configured in the environment and save the preference; the seeded workspace starts with AI disabled. Configure PayPal Sandbox client ID and secret before trying checkout. Never put credentials in the repository or video.
 
-Do not record the merchant secret, Gemini key, browser password manager, or real customer information. Use the demo fixture and a Sandbox buyer.
-
-## Hackathon progress
-
-For this event, the project was advanced with the end-to-end PayPal/AI story in mind: the seller workspace was styled to present the request-to-payment flow, the demo seed now uses a PayPal-supported USD catalog with a starter draft order, and the repository gained an event-focused run guide, tool disclosure, video outline, and MIT license. The existing backend already validates Gemini catalog selections and uses PayPal Orders v2 for sandbox checkout and server-side capture.
-
-## Repository and submission checklist
-
-- [x] Project description and feature explanation.
-- [x] PayPal and AI tools disclosed above.
-- [x] Functional local setup and demo account documented.
-- [x] Open-source MIT license included at repository root.
-- [ ] Push this source tree to a public GitHub, GitLab, or Bitbucket repository and place that URL in the Devpost submission.
-- [ ] Record and upload the working end-to-end video to YouTube as public or unlisted, then add its link to Devpost.
-- [ ] Complete Devpost project metadata and submit before the deadline.
-- [ ] Run the end-to-end flow with your own PayPal Sandbox merchant and buyer accounts and a live Gemini API key before recording.
-
-The source tree is ready for a public repository, but this workspace is not currently initialized as a Git repository and has no hosted demo URL. A published submission still needs the author's public repository URL and video URL.
+AI receives customer-request text and catalog names, descriptions, and SKUs. Do not include sensitive customer data in a request, and review the configured provider’s data terms. The fixture account (`owner@example.test` / `ChangeMe123456`) and sample records are for local development only and must not be exposed on a public host.
