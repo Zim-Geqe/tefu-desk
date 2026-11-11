@@ -41,10 +41,13 @@ Structured AI output still needs strict server-side validation; a model response
 
 ## What's next for Tefo Desk
 
-- Add a real Sesotho user experience and validate the terminology with Sesotho speakers. The current interface is English-only; the name is not a claim of localization.
-- Improve South African payment support. The current PayPal Orders integration rejects ZAR, and the seeded checkout demo uses USD; it does not convert currency.
-- Run and document a complete live-credentialed Gemini and PayPal Sandbox demo, including webhook delivery.
-- Add usability and reliability work based on feedback from small-business owners.
+Tefo Desk currently helps a seller turn a customer request into a reviewed catalog order and collect payment through PayPal. The next step is to grow that workflow into a more capable assistant for small businesses:
+
+- Make order intake conversational across more channels, so sellers can bring in requests from messaging and email instead of copying them into the app.
+- Extend the AI assistant beyond drafting orders to help with catalog updates, order summaries, and customer follow-ups, while keeping seller approval in control of important actions.
+- Add clearer payment operations, including reliable webhook-driven updates, reconciliation, and a more complete view of refunds and outstanding orders.
+- Build a localized Sesotho and English experience with terminology reviewed by Sesotho speakers, alongside payment options and currency support suited to South African businesses.
+- Use feedback from small-business owners to prioritize practical improvements such as sales insights, repeat-customer workflows, and simpler day-to-day order management.
 
 ## Current scope and important limitations
 
