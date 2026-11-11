@@ -31,6 +31,10 @@ export class PayPalClient {
   }
 }
 
+export function paypalApprovalUrl(links: Array<{ rel?: string; href?: string }> | undefined) {
+  return links?.find(link => (link.rel === 'approve' || link.rel === 'payer-action') && typeof link.href === 'string' && link.href.length > 0)?.href;
+}
+
 export const PAYPAL_CURRENCIES = ['AUD','BRL','CAD','CNY','CZK','DKK','EUR','HKD','HUF','INR','ILS','JPY','MYR','MXN','TWD','NZD','NOK','PHP','PLN','GBP','RUB','SGD','SEK','CHF','THB','USD'] as const;
 export function paypalCurrencySupported(currency: string) { return PAYPAL_CURRENCIES.includes(currency as typeof PAYPAL_CURRENCIES[number]); }
 export function paypalAmount(minor: number, currency: string) {

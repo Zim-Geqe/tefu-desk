@@ -13,7 +13,7 @@ import { authenticate, requireWorkspace as requireWorkspaceCore } from './auth.j
 import { hashToken, newToken } from './security.js';
 import { calculate, assertCurrency, formatMinor } from './money.js';
 import { HttpAiProvider, aiHealth } from './ai.js';
-import { PAYPAL_CURRENCIES, PayPalClient, paypalAmount, paypalMinor } from './paypal.js';
+import { PAYPAL_CURRENCIES, PayPalClient, paypalAmount, paypalApprovalUrl, paypalMinor } from './paypal.js';
 
 const emailSchema = z.string().email().max(320).transform(s => s.toLowerCase());
 const passwordSchema = z.string().min(12).max(128).regex(/[A-Z]/, 'Must include an uppercase letter').regex(/[a-z]/, 'Must include a lowercase letter').regex(/[0-9]/, 'Must include a number');
@@ -391,7 +391,7 @@ export async function buildApp(config: Config, dependencies: Dependencies = {}):
     await db.auditEvent.create({ data: { workspaceId: membership.workspaceId, userId, action: 'payment.initiated', entityType: 'order', entityId: result.order.id } });
     try {
       const pp = await paypal.request('/v2/checkout/orders', 'POST', paypalOrderPayload(result.order), result.attempt.id);
-      const approve = pp.links?.find((link: any) => link.rel === 'approve')?.href;
+      const approve = paypalApprovalUrl(pp.links);
       if (!pp.id || !approve) throw new Error('PayPal returned an invalid checkout order');
       const saved = await db.paymentAttempt.update({ where: { id: result.attempt.id }, data: { paypalOrderId: pp.id, approvalUrl: approve, status: 'CREATED' } });
       return { paymentAttemptId: saved.id, paypalOrderId: pp.id, approvalUrl: approve, reused: false, environment: config.PAYPAL_ENV };
@@ -453,7 +453,7 @@ export async function buildApp(config: Config, dependencies: Dependencies = {}):
       if (attempt.status !== 'UNCERTAIN' || attempt.lastErrorCode !== 'PAYPAL_CREATE_UNCERTAIN') throw (app as any).httpErrors.badRequest('No PayPal order ID is available to reconcile');
       try {
         const created = await paypal.request('/v2/checkout/orders', 'POST', paypalOrderPayload(attempt.order), attempt.id);
-        const approvalUrl = created.links?.find((link: any) => link.rel === 'approve')?.href;
+        const approvalUrl = paypalApprovalUrl(created.links);
         if (!created.id || !approvalUrl) throw new Error('PayPal returned an invalid order during reconciliation');
         const saved = await db.paymentAttempt.update({ where: { id: attempt.id }, data: { paypalOrderId: created.id, approvalUrl, status: 'CREATED', lastErrorCode: null } });
         await db.auditEvent.create({ data: { workspaceId: membership.workspaceId, userId, action: 'payment.creation_reconciled', entityType: 'paymentAttempt', entityId: saved.id } });

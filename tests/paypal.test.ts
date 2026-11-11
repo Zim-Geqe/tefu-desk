@@ -1,8 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.js';
-import { PayPalClient } from '../src/paypal.js';
+import { PayPalClient, paypalApprovalUrl } from '../src/paypal.js';
 
 describe('PayPal HTTP adapter', () => {
+  it('accepts both PayPal approval link relations', () => {
+    expect(paypalApprovalUrl([{ rel: 'approve', href: 'https://sandbox.paypal.test/approve' }])).toBe('https://sandbox.paypal.test/approve');
+    expect(paypalApprovalUrl([{ rel: 'payer-action', href: 'https://sandbox.paypal.test/payer-action' }])).toBe('https://sandbox.paypal.test/payer-action');
+    expect(paypalApprovalUrl([{ rel: 'self', href: 'https://sandbox.paypal.test/order' }])).toBeUndefined();
+    expect(paypalApprovalUrl([{ rel: 'approve', href: '' }])).toBeUndefined();
+  });
+
   it('uses configured sandbox, OAuth and server credentials', async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = [];
     const fetcher = vi.fn(async (input: URL | RequestInfo, init?: RequestInit) => {

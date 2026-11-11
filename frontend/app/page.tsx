@@ -74,10 +74,10 @@ export default function Home() {
       return;
     }
     verifyPayPalReturn(attempt.workspaceId,attempt.attemptId,attempt.orderId)
-      .then(result=>{if(result.verified)setOk(`Payment verified by PayPal for ${result.order.reference}.`);else setError(`Payment is ${result.status?.toLowerCase()||'pending'}. The order remains ${result.order.status.toLowerCase().replaceAll('_',' ')}; refresh to check again.`)})
+      .then(async result=>{await loadWorkspace(attempt.workspaceId);setDetail(result.order);if(result.verified)setOk(`Payment verified by PayPal for ${result.order.reference}.`);else setError(`Payment is ${result.status?.toLowerCase()||'pending'}. The order remains ${result.order.status.toLowerCase().replaceAll('_',' ')}; refresh to check again.`)})
       .catch(e=>setError(message(e)))
       .finally(()=>{sessionStorage.removeItem('tefo_attempt');history.replaceState({},'','/')});
-  },[]);
+  },[loadWorkspace]);
   const displayedOrders=orders;
   const navTo=(s:Section)=>{setSection(s);setMobile(false);setDetail(null);setError('');if(s==='Orders')reloadOrders()};
   const title=section==='Overview'?'Your business, in good order':section==='Order Desk'?'Create an order':section==='Orders'?'Orders':section==='Catalogue'?'Catalogue':'Business Settings';
