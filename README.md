@@ -11,7 +11,7 @@ Small businesses often receive orders in messages and then re-enter the details 
 ## What it does
 
 - Turns a seller’s customer-request text into a proposed order using the business’s active product catalog.
-- Asks for clarification instead of creating an order when the request is uncertain.
+- Asks for clarification instead of creating an order when the request is uncertain or no active catalog product matches.
 - Keeps the seller in control: every AI-generated order is a draft that must be reviewed and confirmed.
 - Calculates prices from saved catalog data, not from AI output.
 - Creates PayPal Checkout orders, captures approved payments on the server, and reconciles uncertain payment attempts.

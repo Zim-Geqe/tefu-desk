@@ -686,7 +686,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ---------- Proposal ---------- */
-.proposal { margin-top: 15px; }
+.proposal { margin-top: 15px; scroll-margin-top: 24px; }
 .proposal .panel-head h2 { margin-top: 8px; }
 .proposal-explanation { font-size: 11px; color: #6b7b8d; line-height: 1.5; }
 .question-box {

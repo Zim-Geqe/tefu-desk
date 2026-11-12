@@ -307,6 +307,7 @@ export async function buildApp(config: Config, dependencies: Dependencies = {}):
     if (aiSettings.provider !== config.AI_PROVIDER.toUpperCase() || aiSettings.model !== config.AI_MODEL) throw Object.assign(new Error('Workspace AI selection is not available in deployment configuration'), { statusCode: 503 });
     const business = await db.business.findUniqueOrThrow({ where: { workspaceId: membership.workspaceId } });
     const catalog = await db.product.findMany({ where: { workspaceId: membership.workspaceId, active: true }, select: { id: true, name: true, description: true, sku: true, priceMinor: true, currency: true } });
+    if (!catalog.length) throw Object.assign(new Error('Add at least one active product to the catalogue before drafting an order'), { statusCode: 409 });
     const proposal = await ai.interpret(input.request, catalog, business.currency);
     const needsClarification = proposal.questions.length > 0 || proposal.items.length === 0;
     if (needsClarification) return { draft: null, items: proposal.items, questions: proposal.questions, explanation: proposal.explanation, requiresConfirmation: true };
