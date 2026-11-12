@@ -4,7 +4,6 @@ Production deployment for `https://tefudesk.fastlaneorders.online` uses Docker C
 
 ## Port plan
 
-The VPS inventory already has services on host ports 3000, 3001, 4000, and 4002. Tefo Desk uses two private loopback ports instead:
 
 | Service | VPS bind | Container port | Public access |
 | --- | --- | --- | --- |
@@ -12,7 +11,7 @@ The VPS inventory already has services on host ports 3000, 3001, 4000, and 4002.
 | Next.js web | `127.0.0.1:4511` | `3000` | Nginx at `/` |
 | PostgreSQL | Docker network only | `5432` | None |
 
-The ports 4510 and 4511 were selected because they do not appear in the `docker ps` inventory supplied for this VPS. `deploy.sh` checks that they are free before starting. To choose other free ports, set `BACKEND_HOST_PORT` and `FRONTEND_HOST_PORT` before the first deployment; the script records the values in `.env.production` for later runs. Never expose the app or database ports directly to the public internet.
+The ports 4510 and 4511 were selected. To choose other free ports, set `BACKEND_HOST_PORT` and `FRONTEND_HOST_PORT` before the first deployment; the script records the values in `.env.production` for later runs. Never expose the app or database ports directly to the public internet.
 
 ## Before deployment
 
