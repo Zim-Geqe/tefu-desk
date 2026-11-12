@@ -8,11 +8,11 @@ Tefo means “payment” in Sesotho, a South African language. Small businesses 
 
 Tefo Desk is a business workspace that moves an order from customer request to PayPal payment:
 
-1. A seller describes what a customer wants in plain language.
+1. A seller enters a customer request in English, Sesotho, or a mix of the two.
 2. AI proposes products and quantities from the seller’s active catalog, or asks questions if the request is unclear.
-3. Tefo Desk calculates prices from catalog records and saves the proposal as a draft.
+3. AI provides a short match note for each suggested product so the seller can see why it was selected. Tefo Desk calculates prices from catalog records and saves the proposal as a draft.
 4. The seller reviews and confirms the order.
-5. The customer approves PayPal Checkout, and the backend captures and verifies the payment before marking the order paid.
+5. The customer approves PayPal Checkout, and the backend captures and verifies the payment before marking the order paid. Tefo Desk then shows a payment record linking the original request, order, amount, and PayPal capture ID.
 
 AI cannot add an unlisted product or set a price, and it cannot initiate checkout without the seller confirming the draft. The app also includes manual order creation, order and catalog management, payment reconciliation, and payment/refund activity.
 
@@ -31,7 +31,7 @@ AI cannot add an unlisted product or set a price, and it cannot initiate checkou
 
 ### What the AI and PayPal do
 
-The AI receives the customer request and active catalog names, descriptions, and SKUs; it returns product IDs, quantities, clarification questions, and an explanation. The server validates the response against the workspace catalog and computes amounts from database prices. PayPal credentials remain in the backend environment. Checkout approval is not treated as payment: the backend captures through PayPal and checks the capture result before updating the order.
+The AI receives the customer request and active catalog names, descriptions, and SKUs; it is prompted to interpret English, Sesotho, or mixed-language requests and returns product IDs, quantities, match notes, clarification questions, and an explanation. Language quality is model-dependent and has not yet been validated with Sesotho speakers. The server validates the response against the workspace catalog and computes amounts from database prices. PayPal credentials remain in the backend environment. Checkout approval is not treated as payment: the backend captures through PayPal and checks the capture result before updating the order. The verified payment record is generated from the persisted order and capture, not from AI output.
 
 ## Challenges we ran into
 
@@ -41,7 +41,7 @@ Payment flows also have more than a success and failure state. A browser can clo
 
 ## Accomplishments that we're proud of
 
-- Built the end-to-end seller flow: AI-assisted draft, human review, PayPal Sandbox checkout, server-side capture, and persisted payment status.
+- Built the end-to-end seller flow: English/Sesotho/mixed-language AI-assisted draft with per-item match notes, human review, PayPal Sandbox checkout, server-side capture, and a persisted payment record.
 - Kept prices anchored to the database catalog and made order confirmation an explicit seller action.
 - Added workspace-scoped records, idempotent checkout attempts, payment reconciliation, and webhook signature verification/deduplication support.
 - Added a repeatable local demo workspace with three USD catalog items and a draft order, plus automated tests for core logic and mocked provider/payment boundaries.
@@ -52,7 +52,7 @@ Structured output does not make an AI response trustworthy; the server still nee
 
 ## What's next for Tefo Desk
 
-- Localize the interface and order-assistance experience into Sesotho with review from fluent speakers. The current UI is English-only.
+- Validate Sesotho and mixed-language interpretation and terminology with fluent speakers, then localize the interface. The UI is currently English-only and model language quality is not certified.
 - Improve support for South African payment expectations. This PayPal Orders integration currently rejects ZAR rather than converting it; the seeded checkout demo therefore uses USD.
 - Complete and record a credentialed end-to-end Gemini and PayPal Sandbox run, including webhook delivery.
 - Test the workflow with small-business owners and improve the catalog matching and clarification experience from their feedback.

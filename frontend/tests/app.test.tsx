@@ -1,6 +1,6 @@
 ﻿import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import Home from '../app/page';
+import Home, { VerifiedPaymentRecord } from '../app/page';
 
 const user = { id: 'u1', email: 'owner@example.test', name: 'Tefo Owner', memberships: [{ role: 'OWNER', workspace: { id: 'w1', name: 'Corner Kitchen' } }] };
 const product = { id: 'p1', name: 'Chicken meal', description: null, sku: null, priceMinor: 8900, currency: 'ZAR', active: true };
@@ -93,19 +93,20 @@ describe('Tefo Desk workspace flows', () => {
     try {
       const order = {
         id: 'o1', reference: 'TD-TEST-ORDER', customerName: 'A customer', customerEmail: null, customerPhone: null,
-        customerRequest: 'One chicken meal', currency: 'ZAR', subtotalMinor: 8900, totalMinor: 8900,
+        customerRequest: 'Ke kopa one chicken meal', currency: 'ZAR', subtotalMinor: 8900, totalMinor: 8900,
         status: 'DRAFT', aiGenerated: true, createdAt: new Date().toISOString(),
         items: [{ id: 'i1', productId: product.id, descriptionSnapshot: product.name, quantity: 1, unitPriceMinor: 8900, lineTotalMinor: 8900, currency: 'ZAR' }]
       };
-      const fetchMock = workspaceApi({ aiResponse: { draft: order, items: [{ productId: product.id, quantity: 1 }], questions: [], explanation: 'Matched the catalog item.', requiresConfirmation: true } });
+      const fetchMock = workspaceApi({ aiResponse: { draft: order, items: [{ productId: product.id, quantity: 1, matchNote: 'The request asks for one chicken meal.' }], questions: [], explanation: 'Matched the catalog item.', requiresConfirmation: true } });
       vi.stubGlobal('fetch', fetchMock);
       await signInAndOpenOrderDesk();
       fireEvent.change(screen.getByLabelText('Customer name'), { target: { value: 'A customer' } });
-      fireEvent.change(screen.getByLabelText('Customer request'), { target: { value: 'One chicken meal' } });
+      fireEvent.change(screen.getByLabelText('Customer request'), { target: { value: 'Ke kopa one chicken meal' } });
       fireEvent.click(screen.getByRole('button', { name: 'Draft with AI' }));
 
       expect(await screen.findByText('Review your order draft')).toBeTruthy();
       expect(await screen.findByText(/Server-calculated total/)).toBeTruthy();
+      expect(await screen.findByText(/AI match note: The request asks for one chicken meal/)).toBeTruthy();
       await waitFor(() => expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' }));
       expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/orders/draft-from-request'))).toBe(true);
     } finally {
@@ -136,5 +137,21 @@ describe('Tefo Desk workspace flows', () => {
 
     expect(await screen.findByText(/Add at least one active product to your catalogue/)).toBeTruthy();
     expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/orders/draft-from-request'))).toBe(false);
+  });
+
+  it('shows a verified payment record only for a paid order with a captured PayPal ID', () => {
+    const order = {
+      id: 'o-paid', reference: 'TD-PAID-001', customerName: 'A customer', customerRequest: 'Ke kopa one chicken meal',
+      currency: 'USD', subtotalMinor: 1250, totalMinor: 1250, status: 'PAID', aiGenerated: true,
+      createdAt: '2026-11-12T06:00:00.000Z', items: [],
+      payments: [{ id: 'attempt-1', status: 'CAPTURED', amountMinor: 1250, currency: 'USD', captureId: 'CAPTURE-123', createdAt: '2026-11-12T06:00:00.000Z', updatedAt: '2026-11-12T06:01:00.000Z' }]
+    };
+    const { rerender } = render(<VerifiedPaymentRecord order={order}/>);
+    expect(screen.getByText('PayPal payment verified')).toBeTruthy();
+    expect(screen.getByText('CAPTURE-123')).toBeTruthy();
+    expect(screen.getByText('Ke kopa one chicken meal')).toBeTruthy();
+
+    rerender(<VerifiedPaymentRecord order={{ ...order, status: 'AWAITING_PAYMENT' }}/>);
+    expect(screen.queryByText('PayPal payment verified')).toBeNull();
   });
 });

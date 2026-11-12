@@ -44,9 +44,10 @@ describe('money', () => {
 describe('AI proposal validation', () => {
   const catalog = [{ id: 'p1', name: 'Tea', description: null, sku: null, priceMinor: 450, currency: 'ZAR' }];
   it('accepts only in-catalog product IDs and valid quantities', () => {
-    expect(validateProposal({ items: [{ productId: 'p1', quantity: 2 }], questions: [], explanation: 'Matched tea.' }, catalog, 'ZAR').items[0]).toEqual({ productId: 'p1', quantity: 2 });
-    expect(() => validateProposal({ items: [{ productId: 'other', quantity: 2 }], questions: [], explanation: '' }, catalog, 'ZAR')).toThrow(/outside/);
-    expect(() => validateProposal({ items: [{ productId: 'p1', quantity: 0 }], questions: [], explanation: '' }, catalog, 'ZAR')).toThrow(/quantity/);
+    expect(validateProposal({ items: [{ productId: 'p1', quantity: 2, matchNote: 'The request asks for tea.' }], questions: [], explanation: 'Matched tea.' }, catalog, 'ZAR').items[0]).toEqual({ productId: 'p1', quantity: 2, matchNote: 'The request asks for tea.' });
+    expect(() => validateProposal({ items: [{ productId: 'other', quantity: 2, matchNote: 'Unknown product.' }], questions: [], explanation: '' }, catalog, 'ZAR')).toThrow(/outside/);
+    expect(() => validateProposal({ items: [{ productId: 'p1', quantity: 0, matchNote: 'Tea.' }], questions: [], explanation: '' }, catalog, 'ZAR')).toThrow(/quantity/);
+    expect(() => validateProposal({ items: [{ productId: 'p1', quantity: 1, matchNote: '' }], questions: [], explanation: '' }, catalog, 'ZAR')).toThrow(/match note/);
     expect(() => validateProposal({ items: [], questions: Array(11).fill('Question?'), explanation: '' }, catalog, 'ZAR')).toThrow(/oversized/);
   });
 
@@ -54,15 +55,17 @@ describe('AI proposal validation', () => {
     let call: { url: string; init?: RequestInit } | undefined;
     const fetcher = (async (input: URL | RequestInfo, init?: RequestInit) => {
       call = { url: String(input), init };
-      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ items: [{ productId: 'p1', quantity: 1 }], questions: [], explanation: 'Matched.' }) }] } }] }), { status: 200 });
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ items: [{ productId: 'p1', quantity: 1, matchNote: 'The request mentions tea.' }], questions: [], explanation: 'Matched.' }) }] } }] }), { status: 200 });
     }) as typeof fetch;
     const config = loadConfig({ ...env, AI_PROVIDER: 'gemini', AI_MODEL: 'gemini-test', AI_API_KEY: 'secret-test-key' });
-    const result = await new HttpAiProvider(config, fetcher).interpret('one tea', catalog, 'ZAR');
-    expect(result.items).toEqual([{ productId: 'p1', quantity: 1 }]);
+    const result = await new HttpAiProvider(config, fetcher).interpret('Ke kopa one tea', catalog, 'ZAR');
+    expect(result.items).toEqual([{ productId: 'p1', quantity: 1, matchNote: 'The request mentions tea.' }]);
     expect(call?.url).not.toContain('secret-test-key');
     expect(call?.init?.headers).toMatchObject({ 'x-goog-api-key': 'secret-test-key' });
     const requestBody = JSON.parse(String(call?.init?.body));
     const prompt = requestBody.contents[0].parts[0].text as string;
+    expect(prompt).toContain('Sesotho, English, or a mix of both');
+    expect(prompt).toContain('Ke kopa one tea');
     expect(prompt).toContain('"id":"p1"');
     expect(prompt).not.toContain('priceMinor');
     expect(prompt).not.toContain('450');

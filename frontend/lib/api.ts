@@ -2,14 +2,14 @@
 export type User = { id: string; email: string; name: string; memberships: { role: string; workspace: { id: string; name: string } }[] };
 export type Product = { id: string; name: string; description: string | null; sku: string | null; priceMinor: number; currency: string; active: boolean };
 export type Item = { id: string; productId?: string | null; descriptionSnapshot: string; quantity: number; unitPriceMinor: number; lineTotalMinor: number; currency: string };
-export type Payment = { id: string; status: string; amountMinor: number; currency: string; createdAt: string };
+export type Payment = { id: string; status: string; amountMinor: number; currency: string; captureId?: string | null; createdAt: string; updatedAt?: string };
 export type Order = { id: string; reference: string; customerName: string; customerEmail?: string | null; customerPhone?: string | null; customerRequest?: string | null; currency: string; subtotalMinor: number; totalMinor: number; status: string; aiGenerated: boolean; createdAt: string; items: Item[]; payments?: Payment[] };
 export type PageOrders = { data: Order[]; nextCursor: string | null };
 export type Business = { name: string; currency: string; email?: string | null; phone?: string | null; address?: string | null };
 export type Dashboard = { ordersByStatus: Record<string, number>; capturedPayments: { totalMinor: number; count: number }; completedRefunds: { totalMinor: number; count: number }; netPaidMinor: number; paymentAttemptsByStatus: Record<string, { count: number; totalMinor: number }>; awaitingPayments: { count: number; totalMinor: number }; awaitingPaymentOrders: number; recentActivity: { action: string; entityType: string | null; entityId: string | null; createdAt: string }[] };
 export type AiSettings = { configured: boolean; provider: string; model: string | null; workspaceProvider: string; workspaceModel: string | null };
 export type PaypalSettings = { environment: 'sandbox' | 'live'; configured: boolean; supportedCurrencies: string[] };
-export type AiDraft = { draft: Order | null; items: { productId: string; quantity: number }[]; questions: string[]; explanation: string; requiresConfirmation: boolean };
+export type AiDraft = { draft: Order | null; items: { productId: string; quantity: number; matchNote: string }[]; questions: string[]; explanation: string; requiresConfirmation: boolean };
 export type Checkout = { paymentAttemptId: string; paypalOrderId?: string; approvalUrl?: string; reused?: boolean; environment?: string; status?: string; reconciliationRequired?: boolean };
 export type Reconciliation = { paymentAttemptId: string; status: string; approvalUrl?: string; paypalOrderId?: string };
 export type Followup = { text: string; delivery: 'not_sent'; paymentAttempts: { status: string; amountMinor: number; currency: string }[] };
@@ -24,4 +24,3 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 export const ws = (id: string) => `/workspaces/${encodeURIComponent(id)}`;
 export const money = (minor: number, currency: string) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency, currencyDisplay: 'code' }).format(minor / 100);
 export const date = (value: string) => new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
-

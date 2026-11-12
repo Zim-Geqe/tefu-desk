@@ -11,10 +11,13 @@ Small businesses often receive orders in messages and then re-enter the details 
 ## What it does
 
 - Turns a seller’s customer-request text into a proposed order using the business’s active product catalog.
+- Accepts English, Sesotho, and mixed-language requests as model-assisted input; seller review is required, and language accuracy has not yet been validated with Sesotho speakers.
+- Shows an AI-generated match note for each proposed catalog item so the seller can inspect why it was suggested.
 - Asks for clarification instead of creating an order when the request is uncertain or no active catalog product matches.
 - Keeps the seller in control: every AI-generated order is a draft that must be reviewed and confirmed.
 - Calculates prices from saved catalog data, not from AI output.
 - Creates PayPal Checkout orders, captures approved payments on the server, and reconciles uncertain payment attempts.
+- Shows a verified payment record with the order reference, captured amount, PayPal capture ID, and original request after server-side capture verification.
 - Provides workspace-scoped order, catalog, payment, refund, and activity views.
 
 ## How we built it
@@ -52,7 +55,8 @@ Tefo Desk currently helps a seller turn a customer request into a reviewed catal
 ## Current scope and important limitations
 
 - **Payments:** PayPal is configured for Sandbox by default. ZAR is currently unsupported by this Orders integration and is rejected rather than silently converted. The demo fixture uses USD. Do not use live credentials for the hackathon demo.
-- **AI:** Gemini is the documented/demo provider; the backend also supports OpenAI and compatible chat-completions endpoints. AI is disabled until configured both in the backend environment and in **Business settings → AI order assistant**. The app does not localize the AI flow to Sesotho.
+- **AI:** Gemini is the documented/demo provider; the backend also supports OpenAI and compatible chat-completions endpoints. AI is disabled until configured both in the backend environment and in **Business settings → AI order assistant**. The interface remains English-only; model-assisted Sesotho interpretation is not validated for accuracy.
+- **Language:** The prompt asks the configured model to interpret English, Sesotho, or mixed requests and provide item match notes. This is model-assisted behavior, not a fully localized UI or a guarantee of Sesotho accuracy; validate terminology and quality with fluent speakers.
 - **Data sent to AI:** The customer request and active catalog names, descriptions, and SKUs are sent to the configured provider to make a draft. Do not include sensitive customer data; review the provider’s terms and data-retention policy.
 - **Messaging:** Follow-up text can be drafted from order state, but it is not sent by the application.
 - **Hosting:** Source includes VPS deployment files. The judge-ready local setup below is the supported run path; configure and verify a hosted deployment separately.
