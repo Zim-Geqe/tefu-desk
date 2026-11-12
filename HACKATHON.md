@@ -12,7 +12,7 @@ Tefo Desk is a business workspace that moves an order from customer request to P
 2. AI proposes products and quantities from the seller’s active catalog, or asks questions if the request is unclear.
 3. AI provides a short match note for each suggested product so the seller can see why it was selected. Tefo Desk calculates prices from catalog records and saves the proposal as a draft.
 4. The seller reviews and confirms the order.
-5. The customer approves PayPal Checkout, and the backend captures and verifies the payment before marking the order paid. Tefo Desk then shows a payment record linking the original request, order, amount, and PayPal capture ID.
+5. Mission Control tracks the saved order and payment activity, distinguishes buyer approval from capture, and points to the next seller action. The customer approves PayPal Checkout, and the backend captures and verifies the payment before marking the order paid. Tefo Desk then shows the resulting payment record linking the original request, order, amount, and PayPal capture ID.
 
 AI cannot add an unlisted product or set a price, and it cannot initiate checkout without the seller confirming the draft. The app also includes manual order creation, order and catalog management, payment reconciliation, and payment/refund activity.
 
@@ -43,6 +43,7 @@ Payment flows also have more than a success and failure state. A browser can clo
 
 - Built the end-to-end seller flow: English/Sesotho/mixed-language AI-assisted draft with per-item match notes, human review, PayPal Sandbox checkout, server-side capture, and a persisted payment record.
 - Kept prices anchored to the database catalog and made order confirmation an explicit seller action.
+- Built Mission Control to present persisted order/payment events, the current payment state, and the next action without treating a PayPal redirect or buyer approval as proof of payment.
 - Added workspace-scoped records, idempotent checkout attempts, payment reconciliation, and webhook signature verification/deduplication support.
 - Added a repeatable local demo workspace with three USD catalog items and a draft order, plus automated tests for core logic and mocked provider/payment boundaries.
 

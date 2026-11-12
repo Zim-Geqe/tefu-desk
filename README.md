@@ -18,6 +18,7 @@ Small businesses often receive orders in messages and then re-enter the details 
 - Calculates prices from saved catalog data, not from AI output.
 - Creates PayPal Checkout orders, captures approved payments on the server, and reconciles uncertain payment attempts.
 - Shows a verified payment record with the order reference, captured amount, PayPal capture ID, and original request after server-side capture verification.
+- Adds Mission Control to each order: a persisted transaction timeline, the next appropriate seller action, and explicit distinctions between buyer approval, capture, and verified payment.
 - Provides workspace-scoped order, catalog, payment, refund, and activity views.
 
 ## How we built it

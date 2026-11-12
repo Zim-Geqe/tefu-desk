@@ -259,9 +259,15 @@ export async function buildApp(config: Config, dependencies: Dependencies = {}):
   });
   api.get('/api/v1/workspaces/:workspaceId/orders/:orderId', async (request: any) => {
     const { membership } = await requireWorkspace(app, request, request.params.workspaceId);
-    const order = await db.order.findFirst({ where: { id: request.params.orderId, workspaceId: membership.workspaceId }, include: { items: true, payments: true } });
+    const order = await db.order.findFirst({ where: { id: request.params.orderId, workspaceId: membership.workspaceId }, include: { items: true, payments: { include: { refunds: true } } } });
     if (!order) throw (app as any).httpErrors.notFound('Order not found');
-    return order;
+    const entityIds = [order.id, ...order.payments.map(payment => payment.id), ...order.payments.flatMap(payment => payment.refunds.map(refund => refund.paypalRefundId))];
+    const activity = await db.auditEvent.findMany({
+      where: { workspaceId: membership.workspaceId, entityId: { in: entityIds } },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, action: true, entityType: true, entityId: true, createdAt: true }
+    });
+    return { ...order, activity };
   });
   api.patch('/api/v1/workspaces/:workspaceId/orders/:orderId', async (request: any) => {
     const { userId, membership } = await requireWorkspace(app, request, request.params.workspaceId);

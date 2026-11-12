@@ -2,8 +2,10 @@
 export type User = { id: string; email: string; name: string; memberships: { role: string; workspace: { id: string; name: string } }[] };
 export type Product = { id: string; name: string; description: string | null; sku: string | null; priceMinor: number; currency: string; active: boolean };
 export type Item = { id: string; productId?: string | null; descriptionSnapshot: string; quantity: number; unitPriceMinor: number; lineTotalMinor: number; currency: string };
-export type Payment = { id: string; status: string; amountMinor: number; currency: string; captureId?: string | null; createdAt: string; updatedAt?: string };
-export type Order = { id: string; reference: string; customerName: string; customerEmail?: string | null; customerPhone?: string | null; customerRequest?: string | null; currency: string; subtotalMinor: number; totalMinor: number; status: string; aiGenerated: boolean; createdAt: string; items: Item[]; payments?: Payment[] };
+export type Refund = { id: string; paypalRefundId: string; amountMinor: number; currency: string; status: string; createdAt: string; updatedAt: string };
+export type Payment = { id: string; status: string; amountMinor: number; currency: string; paypalOrderId?: string | null; captureId?: string | null; createdAt: string; updatedAt?: string; refunds?: Refund[] };
+export type OrderActivity = { id: string; action: string; entityType: string | null; entityId: string | null; createdAt: string };
+export type Order = { id: string; reference: string; customerName: string; customerEmail?: string | null; customerPhone?: string | null; customerRequest?: string | null; currency: string; subtotalMinor: number; totalMinor: number; status: string; aiGenerated: boolean; confirmedAt?: string | null; confirmedById?: string | null; createdAt: string; items: Item[]; payments?: Payment[]; activity?: OrderActivity[] };
 export type PageOrders = { data: Order[]; nextCursor: string | null };
 export type Business = { name: string; currency: string; email?: string | null; phone?: string | null; address?: string | null };
 export type Dashboard = { ordersByStatus: Record<string, number>; capturedPayments: { totalMinor: number; count: number }; completedRefunds: { totalMinor: number; count: number }; netPaidMinor: number; paymentAttemptsByStatus: Record<string, { count: number; totalMinor: number }>; awaitingPayments: { count: number; totalMinor: number }; awaitingPaymentOrders: number; recentActivity: { action: string; entityType: string | null; entityId: string | null; createdAt: string }[] };
